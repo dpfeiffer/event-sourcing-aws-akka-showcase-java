@@ -15,18 +15,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.libs.Json;
 import scala.Tuple2;
+import settings.Settings;
 
 public class NotificationsSender {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Inject
-    public NotificationsSender(ActorSystem system) {
+    public NotificationsSender(ActorSystem system, Settings settings) {
 
         final AmazonSQSAsync client = AmazonSQSAsyncClientBuilder.defaultClient();
-        SqsSource.create("https://sqs.eu-west-1.amazonaws.com/929580149227/event-sourcing-aws-akka-showcase", client)
+        SqsSource.create(settings.getNotificationsQueueUrl(), client)
             .map(this::handleEvent)
-            .to(SqsAckSink.create("https://sqs.eu-west-1.amazonaws.com/929580149227/event-sourcing-aws-akka-showcase", client))
+            .to(SqsAckSink.create(settings.getNotificationsQueueUrl(), client))
             .run(ActorMaterializer.create(system));
 
     }
@@ -42,7 +43,7 @@ public class NotificationsSender {
         }else if(eventType.equals("timeentry.declined")){
             logger.info("sending timeentry.declined notification");
         }
-        return new Tuple2<Message, MessageAction>(message, new Ack());
+        return new Tuple2<>(message, new Ack());
 
     }
 }

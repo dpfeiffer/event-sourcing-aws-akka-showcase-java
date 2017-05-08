@@ -13,11 +13,12 @@ import com.amazonaws.services.sns.AmazonSNSAsyncClientBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import play.libs.Json;
+import settings.Settings;
 
 public class EventPublisher {
 
     @Inject
-    public EventPublisher(ActorSystem system) {
+    public EventPublisher(ActorSystem system, Settings settings) {
 
         final AmazonSNSAsync client = AmazonSNSAsyncClientBuilder.standard()
             .withRegion(Regions.EU_WEST_1)
@@ -28,7 +29,7 @@ public class EventPublisher {
                 final JsonNode json = Json.toJson(events);
                 return Json.stringify(json);
             })
-            .to(SnsPublisher.createSink("arn:aws:sns:eu-west-1:929580149227:event-sourcing-aws-akka-showcase", client))
+            .to(SnsPublisher.createSink(settings.getPublisherTopicArn(), client))
             .run(ActorMaterializer.create(system));
 
         system.eventStream().subscribe(ref, Event.class);
